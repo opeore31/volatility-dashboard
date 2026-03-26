@@ -1,0 +1,228 @@
+{
+    "job_id": "5ab71cb6",
+    "report_title": "Memory Forensics Report",
+    "generated_at": "25 March 2026, 19:48",
+    "source_file": "MemoryDump_Lab1.raw",
+    "selected_plugins": [
+        "Info",
+        "PsList",
+        "PsTree",
+        "CmdLine",
+        "DllList",
+        "Malfind",
+        "VadInfo",
+        "NetScan"
+    ],
+    "analysis_duration_seconds": 129.82,
+    "executive_summary": "High-risk indicators were detected in this memory image and the dump should be prioritized for investigation.",
+    "system_details": {
+        "build_lab": "7601.17514.amd64fre.win7sp1_rtm.",
+        "system_time": "2019-12-11 14:38:00+00:00",
+        "system_root": "C:\\Windows",
+        "is_64_bit": "True"
+    },
+    "summary": {
+        "processes": 48,
+        "network_connections": 0,
+        "injected_regions": 11,
+        "risk_score": 83
+    },
+    "severity_counts": {
+        "high": 5,
+        "medium": 0,
+        "low": 0
+    },
+    "score_breakdown": {
+        "processes": 12,
+        "paths": 0,
+        "injection": 71,
+        "network": 0,
+        "stability": 0,
+        "raw_total": 83,
+        "capped_total": 83,
+        "was_capped": false
+    },
+    "top_contributors": [
+        {
+            "message": "HIGH: 11 injected memory regions detected",
+            "score": 35,
+            "category": "injection"
+        },
+        {
+            "message": "HIGH: Suspicious process detected (cmd.exe, PID 1984)",
+            "score": 12,
+            "category": "processes"
+        },
+        {
+            "message": "HIGH: Multiple injected memory regions found in svchost.exe (PID 948, 2)",
+            "score": 12,
+            "category": "injection"
+        },
+        {
+            "message": "HIGH: Multiple injected memory regions found in explorer.exe (PID 604, 2)",
+            "score": 12,
+            "category": "injection"
+        },
+        {
+            "message": "HIGH: Multiple injected memory regions found in explorer.exe (PID 2504, 2)",
+            "score": 12,
+            "category": "injection"
+        }
+    ],
+    "score_explanation": {
+        "score": 83,
+        "max_score": 100,
+        "raw_total": 83,
+        "capped_total": 83,
+        "was_capped": false,
+        "triage_level": "High Priority Investigation",
+        "summary": "High-risk indicators were detected in this memory image and the dump should be prioritized for investigation.",
+        "how_it_works": [
+            "High-severity findings contribute the most to the score.",
+            "Medium-severity findings contribute moderately.",
+            "Low-severity findings contribute lightly.",
+            "Injected memory and repeated suspicious behaviour can increase the score significantly.",
+            "The final score is capped at 100."
+        ]
+    },
+    "plugin_status": {
+        "Info": "OK",
+        "PsList": "OK",
+        "PsTree": "OK",
+        "CmdLine": "OK",
+        "DllList": "OK",
+        "Malfind": "OK",
+        "VadInfo": "OK",
+        "NetScan": "Unsupported"
+    },
+    "alerts": [
+        "HIGH: Suspicious process detected (cmd.exe, PID 1984)",
+        "HIGH: 11 injected memory regions detected",
+        "HIGH: Multiple injected memory regions found in svchost.exe (PID 948, 2)",
+        "HIGH: Multiple injected memory regions found in explorer.exe (PID 604, 2)",
+        "HIGH: Multiple injected memory regions found in explorer.exe (PID 2504, 2)"
+    ],
+    "key_findings": [
+        "Source file analyzed: MemoryDump_Lab1.raw",
+        "System build identified as 7601.17514.amd64fre.win7sp1_rtm.",
+        "System root identified as C:\\Windows",
+        "64-bit operating system: True",
+        "Memory snapshot system time was 2019-12-11 14:38:00+00:00",
+        "Total processes observed: 48",
+        "Total network connections observed: 0",
+        "Total injected regions observed: 11",
+        "High severity alerts: 5",
+        "Medium severity alerts: 0",
+        "Low severity alerts: 0",
+        "Triage level: High Priority Investigation",
+        "NetScan was unsupported for this dump, so connection counts were not derived from valid NetScan data."
+    ],
+    "high_priority_evidence": [
+        "Suspicious process detected: cmd.exe (PID: 1984)",
+        "Suspicious path activity: SearchProtocol (PID: 2524) referenced Temp",
+        "Suspicious path activity: SearchProtocol (PID: 2868) referenced Temp",
+        "Suspicious path activity: DumpIt.exe (PID: 796) referenced Downloads",
+        "Injected memory evidence: svchost.exe (PID: 816) had an executable writable region at 0xdf0000 with protection PAGE_EXECUTE_READWRITE [VadS]",
+        "Injected memory evidence: svchost.exe (PID: 472) had an executable writable region at 0xb30000 with protection PAGE_EXECUTE_READWRITE [VadS]",
+        "Injected memory evidence: svchost.exe (PID: 948) had an executable writable region at 0x23f0000 with protection PAGE_EXECUTE_READWRITE [VadS]",
+        "Injected memory evidence: svchost.exe (PID: 948) had an executable writable region at 0x4c90000 with protection PAGE_EXECUTE_READWRITE [VadS]",
+        "Injected memory evidence: wmpnetwk.exe (PID: 1856) had an executable writable region at 0xb80000 with protection PAGE_EXECUTE_READWRITE [VadS]"
+    ],
+    "commonly_reviewed_sections": [
+        {
+            "title": "Processes",
+            "plugin": "PsList",
+            "status": "OK",
+            "count": 48,
+            "note": "Review running processes, suspicious image names, parent-child relationships, and shell activity."
+        },
+        {
+            "title": "Process Tree",
+            "plugin": "PsTree",
+            "status": "OK",
+            "count": 9,
+            "note": "Review parent-child relationships to identify suspicious process spawning."
+        },
+        {
+            "title": "Command Lines",
+            "plugin": "CmdLine",
+            "status": "OK",
+            "count": 48,
+            "note": "Review executed paths, Temp/AppData/Downloads usage, and suspicious command invocations."
+        },
+        {
+            "title": "Injected Memory",
+            "plugin": "Malfind",
+            "status": "OK",
+            "count": 11,
+            "note": "Review executable writable memory regions and repeated hits in the same process."
+        },
+        {
+            "title": "Network Activity",
+            "plugin": "NetScan",
+            "status": "Unsupported",
+            "count": 0,
+            "note": "Review suspicious ports, remote addresses, and associated processes."
+        },
+        {
+            "title": "DLL Review",
+            "plugin": "DllList",
+            "status": "OK",
+            "count": 2305,
+            "note": "Review loaded DLLs for unusual modules and unexpected injection artifacts."
+        },
+        {
+            "title": "VAD Review",
+            "plugin": "VadInfo",
+            "status": "OK",
+            "count": 6184,
+            "note": "Review memory regions and protections for anomalous mappings."
+        }
+    ],
+    "top_affected_processes": [
+        {
+            "name": "cmd.exe",
+            "pid": "1984",
+            "score": 12,
+            "indicator_count": 1,
+            "reasons": [
+                "Suspicious process name detected"
+            ]
+        },
+        {
+            "name": "svchost.exe",
+            "pid": "948",
+            "score": 12,
+            "indicator_count": 1,
+            "reasons": [
+                "Multiple injected memory regions (2)"
+            ]
+        },
+        {
+            "name": "explorer.exe",
+            "pid": "604",
+            "score": 12,
+            "indicator_count": 1,
+            "reasons": [
+                "Multiple injected memory regions (2)"
+            ]
+        },
+        {
+            "name": "explorer.exe",
+            "pid": "2504",
+            "score": 12,
+            "indicator_count": 1,
+            "reasons": [
+                "Multiple injected memory regions (2)"
+            ]
+        }
+    ],
+    "correlated_findings": [],
+    "recommendations": [
+        "Prioritize this memory image for immediate analyst review.",
+        "Prioritize investigation of cmd.exe (PID 1984) due to highest cumulative risk contribution.",
+        "Investigate injected-memory hits in Malfind and correlate them with the affected processes.",
+        "Network visibility was limited because NetScan was unsupported for this dump.",
+        "Review the process tree to confirm suspicious parent-child execution chains."
+    ]
+}

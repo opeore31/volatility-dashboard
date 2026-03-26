@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Investigation Timeline</h2>
+
+<!-- Shows a chronological list of plugin execution events -->
+
+{% if events %}
+
+<table class="table table-bordered table-striped">
+
+    <thead>
+        <tr>
+            <th>Time</th>
+            <th>Event</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+    {% for e in events %}
+
+        <tr>
+            <td>{{ e.time }}</td>
+            <td>{{ e.description }}</td>
+        </tr>
+
+    {% endfor %}
+
+    </tbody>
+
+</table>
+
+{% else %}
+
+<!-- Displayed when no analysis has been run yet -->
+<p>No investigation activity yet.</p>
+
+{% endif %}
+
+{% endblock %}

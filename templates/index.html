@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    /* ---------------- Plugin list layout ---------------- */
+
+    .plugin-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .plugin-label-wrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* ---------------- Tooltip wrapper ---------------- */
+
+    .info-tooltip-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .info-btn {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 1px solid #cfcfcf;
+        background-color: #ffffff;
+        color: #333333;
+        font-size: 12px;
+        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        line-height: 1;
+        padding: 0;
+    }
+
+    .info-btn:hover {
+        background-color: #f5f5f5;
+    }
+
+    /* ---------------- Tooltip text ---------------- */
+
+    .info-tooltip-text {
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        position: absolute;
+        left: 28px;
+        top: 50%;
+        transform: translateY(-50%);
+        min-width: 240px;
+        max-width: 320px;
+        background-color: #ffffff;
+        color: #222222;
+        border: 1px solid #d9d9d9;
+        border-radius: 6px;
+        padding: 10px 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        font-size: 13px;
+        z-index: 1000;
+        white-space: normal;
+    }
+
+    .info-tooltip-wrap:hover .info-tooltip-text {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    /* ---------------- Upload error message ---------------- */
+
+    .upload-error {
+        margin-top: 10px;
+        color: #cc0000;
+        font-weight: bold;
+        display: none;
+    }
+</style>
+
+<h2>Memory Analysis Dashboard</h2>
+
+<form id="analysisForm" enctype="multipart/form-data">
+
+    <h4>Select Plugins</h4>
+
+    <p>
+        <strong>Selected Plugins:</strong>
+        <span id="pluginCount">{{ plugins|length }}</span>
+    </p>
+
+    {# Short descriptions shown when the user hovers over the info button #}
+    {% set plugin_descriptions = {
+        "windows.info.Info": "Shows basic system information from the memory image, such as build details, system time, and operating system information.",
+        "windows.pslist.PsList": "Lists running processes found in memory. Useful for checking what was active on the system.",
+        "windows.pstree.PsTree": "Shows processes in a parent-child tree structure. Useful for spotting suspicious process spawning chains.",
+        "windows.cmdline.CmdLine": "Displays command-line arguments used to start processes. Useful for identifying suspicious execution paths or commands.",
+        "windows.dlllist.DllList": "Lists DLL modules loaded by processes. Useful for spotting unusual or suspicious loaded modules.",
+        "windows.malfind.Malfind": "Looks for suspicious memory regions that may indicate injected code or malicious in-memory activity.",
+        "windows.vadinfo.VadInfo": "Shows virtual memory region details for processes. Useful for reviewing unusual memory protections and mappings.",
+        "windows.netscan.NetScan": "Scans for network connections and sockets. Useful for identifying suspicious ports, remote addresses, or related processes."
+    } %}
+
+    {# Show each plugin with a checkbox and hover description #}
+    {% for plugin in plugins %}
+    <div class="plugin-row">
+
+        <input
+            class="form-check-input plugin-checkbox"
+            type="checkbox"
+            name="plugins"
+            value="{{ plugin }}"
+            checked
+            onchange="updatePluginCount()"
+        >
+
+        <div class="plugin-label-wrap">
+            <label class="form-check-label">
+                {{ plugin }}
+            </label>
+
+            <div class="info-tooltip-wrap">
+                <button type="button" class="info-btn">i</button>
+                <span class="info-tooltip-text">
+                    {{ plugin_descriptions.get(plugin, "No description available for this plugin yet.") }}
+                </span>
+            </div>
+        </div>
+
+    </div>
+    {% endfor %}
+
+    <br>
+
+    <h4>Upload Memory Dump</h4>
+
+    <input
+        type="file"
+        name="dumpfile"
+        id="dumpfile"
+        class="form-control"
+        required
+        onchange="updateSelectedFile()"
+    >
+
+    <p id="selectedFile" style="margin-top:10px;">No file selected.</p>
+    <p id="uploadError" class="upload-error"></p>
+
+    <br>
+
+    <button
+        id="runButton"
+        type="button"
+        class="btn btn-primary"
+        onclick="submitForm()"
+    >
+        Run Analysis
+    </button>
+
+</form>
+
+<br>
+
+<!-- Progress section only appears after analysis starts -->
+<div id="progressSection" style="display:none">
+
+    <h4>Analysis Progress</h4>
+
+    <p><strong>Job ID:</strong> <span id="jobId">Pending...</span></p>
+    <p>Current Plugin: <strong id="currentPlugin">Starting...</strong></p>
+
+    <div class="progress">
+        <div
+            id="progressBar"
+            class="progress-bar"
+            role="progressbar"
+            style="width:0%"
+        >
+            0%
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let interval;
+
+    // Update the number of selected plugins
+    function updatePluginCount() {
+        let checked = document.querySelectorAll(".plugin-checkbox:checked").length;
+        document.getElementById("pluginCount").innerText = checked;
+    }
+
+    // Show the selected file name and clear any old error message
+    function updateSelectedFile() {
+        let fileInput = document.getElementById("dumpfile");
+        let selectedFile = document.getElementById("selectedFile");
+        let uploadError = document.getElementById("uploadError");
+
+        uploadError.style.display = "none";
+        uploadError.innerText = "";
+
+        if (fileInput.files.length > 0) {
+            selectedFile.innerText = "Selected File: " + fileInput.files[0].name;
+        } else {
+            selectedFile.innerText = "No file selected.";
+        }
+    }
+
+    // Start the analysis request
+    function submitForm() {
+        let form = document.getElementById("analysisForm");
+        let formData = new FormData(form);
+        let runButton = document.getElementById("runButton");
+        let fileInput = document.getElementById("dumpfile");
+        let checkedPlugins = document.querySelectorAll(".plugin-checkbox:checked").length;
+        let uploadError = document.getElementById("uploadError");
+
+        uploadError.style.display = "none";
+        uploadError.innerText = "";
+
+        if (fileInput.files.length === 0) {
+            uploadError.innerText = "Please select a memory dump before running analysis.";
+            uploadError.style.display = "block";
+            return;
+        }
+
+        if (checkedPlugins === 0) {
+            document.getElementById("currentPlugin").innerText = "No plugins selected. Default plugin set will be used.";
+        }
+
+        if (interval) {
+            clearInterval(interval);
+        }
+
+        document.getElementById("progressSection").style.display = "block";
+        document.getElementById("jobId").innerText = "Pending...";
+        document.getElementById("currentPlugin").innerText = "Starting analysis...";
+        document.getElementById("progressBar").style.width = "0%";
+        document.getElementById("progressBar").innerHTML = "0%";
+
+        runButton.disabled = true;
+        runButton.innerText = "Running Analysis...";
+
+        fetch("/run", {
+            method: "POST",
+            body: formData
+        })
+        .then(async res => {
+            let contentType = res.headers.get("content-type") || "";
+            let data = {};
+
+            if (contentType.includes("application/json")) {
+                data = await res.json();
+            }
+
+            if (!res.ok) {
+                throw new Error(data.error || "Failed to start analysis.");
+            }
+
+            if (data.job_id) {
+                document.getElementById("jobId").innerText = data.job_id;
+            }
+
+            startTracking();
+        })
+        .catch(err => {
+            runButton.disabled = false;
+            runButton.innerText = "Run Analysis";
+            document.getElementById("currentPlugin").innerText = "Failed to start analysis";
+            document.getElementById("jobId").innerText = "Unavailable";
+            document.getElementById("progressSection").style.display = "none";
+
+            uploadError.innerText = err.message;
+            uploadError.style.display = "block";
+        });
+    }
+
+    // Start polling the backend for progress updates
+    function startTracking() {
+        interval = setInterval(updateStatus, 1000);
+    }
+
+    // Refresh the progress bar and plugin name during analysis
+    function updateStatus() {
+        fetch("/status")
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("progressBar").style.width = data.progress + "%";
+            document.getElementById("progressBar").innerHTML = data.progress + "%";
+            document.getElementById("currentPlugin").innerText = data.current_plugin;
+
+            if (data.job_id) {
+                document.getElementById("jobId").innerText = data.job_id;
+            }
+
+            if (data.progress === 100 && data.running === false) {
+                clearInterval(interval);
+                window.location.href = "/complete";
+            }
+        });
+    }
+</script>
+
+{% endblock %}

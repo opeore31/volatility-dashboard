@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Analysis History</h2>
+
+<p>Previously generated analysis reports are listed below.</p>
+
+{% if files %}
+
+<!-- Search and sort controls for quick report review -->
+<div class="row mb-3">
+    <div class="col-md-6">
+        <input
+            type="text"
+            id="historySearch"
+            class="form-control"
+            placeholder="Search history by file, job ID, source file, summary, or triage level"
+            onkeyup="filterHistoryTable()"
+        >
+    </div>
+
+    <div class="col-md-4">
+        <select id="historySort" class="form-control" onchange="sortHistoryTable()">
+            <option value="newest">Sort by Newest</option>
+            <option value="oldest">Sort by Oldest</option>
+            <option value="highest_score">Sort by Highest Threat Score</option>
+            <option value="lowest_score">Sort by Lowest Threat Score</option>
+            <option value="triage">Sort by Triage Level</option>
+            <option value="source_file">Sort by Source File</option>
+        </select>
+    </div>
+</div>
+
+<!-- Scrollable table used to review older reports -->
+<div style="max-height:600px; overflow-y:auto;">
+
+    <table class="table table-striped table-hover" id="historyTable">
+
+        <thead>
+            <tr>
+                <th>Report File</th>
+                <th>Job ID</th>
+                <th>Source File</th>
+                <th>Generated / Modified</th>
+                <th>Threat Score</th>
+                <th>Triage Level</th>
+                <th>Executive Summary</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            {% for f in files %}
+            <tr
+                data-time="{{ f.time }}"
+                data-score="{{ f.risk_score }}"
+                data-triage="{{ f.triage_level or '' }}"
+                data-source="{{ f.source_file|lower }}"
+            >
+                <td>{{ f.name }}</td>
+                <td>{{ f.job_id or "—" }}</td>
+                <td>{{ f.source_file }}</td>
+                <td>{{ f.time }}</td>
+
+                <!-- Colour-code the threat score for quick review -->
+                <td>
+                    {% if f.risk_score >= 80 %}
+                    <span class="badge bg-danger">{{ f.risk_score }}</span>
+                    {% elif f.risk_score >= 40 %}
+                    <span class="badge bg-warning text-dark">{{ f.risk_score }}</span>
+                    {% else %}
+                    <span class="badge bg-secondary">{{ f.risk_score }}</span>
+                    {% endif %}
+                </td>
+
+                <!-- Show the triage level with a matching visual label -->
+                <td>
+                    {% if f.triage_level == "High Priority Investigation" %}
+                    <span class="badge bg-danger">{{ f.triage_level }}</span>
+                    {% elif f.triage_level == "Needs Review" %}
+                    <span class="badge bg-warning text-dark">{{ f.triage_level }}</span>
+                    {% elif f.triage_level %}
+                    <span class="badge bg-secondary">{{ f.triage_level }}</span>
+                    {% else %}
+                    <span class="badge bg-light text-dark">Unknown</span>
+                    {% endif %}
+                </td>
+
+                <!-- Keep long summaries readable without breaking the layout -->
+                <td style="max-width:350px; word-break:break-word;">
+                    {{ f.executive_summary }}
+                </td>
+
+                <!-- Open the selected historical report -->
+                <td>
+                    <a href="/history/view/{{ f.name }}" class="btn btn-sm btn-primary">
+                        View Report
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% else %}
+
+<p>No previous analyses found.</p>
+
+{% endif %}
+
+<script>
+    // Filter history rows based on search text
+    function filterHistoryTable() {
+        let input = document.getElementById("historySearch").value.toLowerCase();
+        let rows = document.querySelectorAll("#historyTable tbody tr");
+
+        rows.forEach(row => {
+            let text = row.innerText.toLowerCase();
+            row.style.display = text.includes(input) ? "" : "none";
+        });
+    }
+
+    // Sort history rows by the selected metric
+    function sortHistoryTable() {
+        let table = document.getElementById("historyTable");
+        let tbody = table.querySelector("tbody");
+        let rows = Array.from(tbody.querySelectorAll("tr"));
+        let sortValue = document.getElementById("historySort").value;
+
+        rows.sort((a, b) => {
+            if (sortValue === "newest") {
+                return new Date(b.dataset.time) - new Date(a.dataset.time);
+            }
+
+            if (sortValue === "oldest") {
+                return new Date(a.dataset.time) - new Date(b.dataset.time);
+            }
+
+            if (sortValue === "highest_score") {
+                return parseInt(b.dataset.score) - parseInt(a.dataset.score);
+            }
+
+            if (sortValue === "lowest_score") {
+                return parseInt(a.dataset.score) - parseInt(b.dataset.score);
+            }
+
+            if (sortValue === "source_file") {
+                return a.dataset.source.localeCompare(b.dataset.source);
+            }
+
+            if (sortValue === "triage") {
+                const triageOrder = {
+                    "High Priority Investigation": 3,
+                    "Needs Review": 2,
+                    "Low Concern": 1,
+                    "": 0
+                };
+
+                return (triageOrder[b.dataset.triage] || 0) - (triageOrder[a.dataset.triage] || 0);
+            }
+
+            return 0;
+        });
+
+        rows.forEach(row => tbody.appendChild(row));
+    }
+
+    // Apply default sort when the page loads
+    sortHistoryTable();
+</script>
+
+{% endblock %}

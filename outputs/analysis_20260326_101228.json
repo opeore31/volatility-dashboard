@@ -1,0 +1,209 @@
+{
+    "job_id": "b9f567bf",
+    "report_title": "Memory Forensics Report",
+    "generated_at": "26 March 2026, 10:12",
+    "source_file": "MemoryDump_Lab4.raw",
+    "selected_plugins": [
+        "Info",
+        "PsList",
+        "PsTree",
+        "CmdLine",
+        "DllList",
+        "Malfind",
+        "VadInfo",
+        "NetScan"
+    ],
+    "analysis_duration_seconds": 77.28,
+    "executive_summary": "Moderate suspicious activity was detected in this memory image and the findings should be reviewed carefully.",
+    "system_details": {
+        "build_lab": "7601.17514.amd64fre.win7sp1_rtm.",
+        "system_time": "2019-06-29 07:30:00+00:00",
+        "system_root": "C:\\Windows",
+        "is_64_bit": "True"
+    },
+    "summary": {
+        "processes": 41,
+        "network_connections": 0,
+        "injected_regions": 8,
+        "risk_score": 71
+    },
+    "severity_counts": {
+        "high": 4,
+        "medium": 0,
+        "low": 0
+    },
+    "score_breakdown": {
+        "processes": 0,
+        "paths": 0,
+        "injection": 71,
+        "network": 0,
+        "stability": 0,
+        "raw_total": 71,
+        "capped_total": 71,
+        "was_capped": false
+    },
+    "top_contributors": [
+        {
+            "message": "HIGH: 8 injected memory regions detected",
+            "score": 35,
+            "category": "injection"
+        },
+        {
+            "message": "HIGH: Multiple injected memory regions found in explorer.exe (PID 1944, 2)",
+            "score": 12,
+            "category": "injection"
+        },
+        {
+            "message": "HIGH: Multiple injected memory regions found in dllhost.exe (PID 2076, 2)",
+            "score": 12,
+            "category": "injection"
+        },
+        {
+            "message": "HIGH: Multiple injected memory regions found in explorer.exe (PID 3012, 2)",
+            "score": 12,
+            "category": "injection"
+        }
+    ],
+    "score_explanation": {
+        "score": 71,
+        "max_score": 100,
+        "raw_total": 71,
+        "capped_total": 71,
+        "was_capped": false,
+        "triage_level": "Needs Review",
+        "summary": "Moderate suspicious activity was detected in this memory image and the findings should be reviewed carefully.",
+        "how_it_works": [
+            "High-severity findings contribute the most to the score.",
+            "Medium-severity findings contribute moderately.",
+            "Low-severity findings contribute lightly.",
+            "Injected memory and repeated suspicious behaviour can increase the score significantly.",
+            "The final score is capped at 100."
+        ]
+    },
+    "plugin_status": {
+        "Info": "OK",
+        "PsList": "OK",
+        "PsTree": "OK",
+        "CmdLine": "OK",
+        "DllList": "OK",
+        "Malfind": "OK",
+        "VadInfo": "OK",
+        "NetScan": "Unsupported"
+    },
+    "alerts": [
+        "HIGH: 8 injected memory regions detected",
+        "HIGH: Multiple injected memory regions found in explorer.exe (PID 1944, 2)",
+        "HIGH: Multiple injected memory regions found in dllhost.exe (PID 2076, 2)",
+        "HIGH: Multiple injected memory regions found in explorer.exe (PID 3012, 2)"
+    ],
+    "key_findings": [
+        "Source file analyzed: MemoryDump_Lab4.raw",
+        "System build identified as 7601.17514.amd64fre.win7sp1_rtm.",
+        "System root identified as C:\\Windows",
+        "64-bit operating system: True",
+        "Memory snapshot system time was 2019-06-29 07:30:00+00:00",
+        "Total processes observed: 41",
+        "Total network connections observed: 0",
+        "Total injected regions observed: 8",
+        "High severity alerts: 4",
+        "Medium severity alerts: 0",
+        "Low severity alerts: 0",
+        "Triage level: Needs Review",
+        "NetScan was unsupported for this dump, so connection counts were not derived from valid NetScan data."
+    ],
+    "high_priority_evidence": [
+        "Suspicious path activity: SearchProtocol (PID: 1696) referenced Temp",
+        "Injected memory evidence: explorer.exe (PID: 1944) had an executable writable region at 0x2d30000 with protection PAGE_EXECUTE_READWRITE [VadS]",
+        "Injected memory evidence: explorer.exe (PID: 1944) had an executable writable region at 0x3e00000 with protection PAGE_EXECUTE_READWRITE [VadS]",
+        "Injected memory evidence: SearchFilterHo (PID: 1688) had an executable writable region at 0xc80000 with protection PAGE_EXECUTE_READWRITE [VadS]",
+        "Injected memory evidence: dllhost.exe (PID: 2076) had an executable writable region at 0x220000 with protection PAGE_EXECUTE_READWRITE [VadS]",
+        "Injected memory evidence: dllhost.exe (PID: 2076) had an executable writable region at 0x350000 with protection PAGE_EXECUTE_READWRITE [VadS]"
+    ],
+    "commonly_reviewed_sections": [
+        {
+            "title": "Processes",
+            "plugin": "PsList",
+            "status": "OK",
+            "count": 41,
+            "note": "Review running processes, suspicious image names, parent-child relationships, and shell activity."
+        },
+        {
+            "title": "Process Tree",
+            "plugin": "PsTree",
+            "status": "OK",
+            "count": 11,
+            "note": "Review parent-child relationships to identify suspicious process spawning."
+        },
+        {
+            "title": "Command Lines",
+            "plugin": "CmdLine",
+            "status": "OK",
+            "count": 41,
+            "note": "Review executed paths, Temp/AppData/Downloads usage, and suspicious command invocations."
+        },
+        {
+            "title": "Injected Memory",
+            "plugin": "Malfind",
+            "status": "OK",
+            "count": 8,
+            "note": "Review executable writable memory regions and repeated hits in the same process."
+        },
+        {
+            "title": "Network Activity",
+            "plugin": "NetScan",
+            "status": "Unsupported",
+            "count": 0,
+            "note": "Review suspicious ports, remote addresses, and associated processes."
+        },
+        {
+            "title": "DLL Review",
+            "plugin": "DllList",
+            "status": "OK",
+            "count": 1836,
+            "note": "Review loaded DLLs for unusual modules and unexpected injection artifacts."
+        },
+        {
+            "title": "VAD Review",
+            "plugin": "VadInfo",
+            "status": "OK",
+            "count": 5015,
+            "note": "Review memory regions and protections for anomalous mappings."
+        }
+    ],
+    "top_affected_processes": [
+        {
+            "name": "explorer.exe",
+            "pid": "1944",
+            "score": 12,
+            "indicator_count": 1,
+            "reasons": [
+                "Multiple injected memory regions (2)"
+            ]
+        },
+        {
+            "name": "dllhost.exe",
+            "pid": "2076",
+            "score": 12,
+            "indicator_count": 1,
+            "reasons": [
+                "Multiple injected memory regions (2)"
+            ]
+        },
+        {
+            "name": "explorer.exe",
+            "pid": "3012",
+            "score": 12,
+            "indicator_count": 1,
+            "reasons": [
+                "Multiple injected memory regions (2)"
+            ]
+        }
+    ],
+    "correlated_findings": [],
+    "recommendations": [
+        "Prioritize investigation of explorer.exe (PID 1944) due to highest cumulative risk contribution.",
+        "Investigate injected-memory hits in Malfind and correlate them with the affected processes.",
+        "Network visibility was limited because NetScan was unsupported for this dump.",
+        "Review the process tree to confirm suspicious parent-child execution chains."
+    ]
+}

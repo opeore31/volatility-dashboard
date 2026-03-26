@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Memory Forensics Dashboard</title>
+
+<link rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+<style>
+
+/* ---------------- Base ---------------- */
+
+body{
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    display: flex;
+    background-color: #f4f6f9; /* softer background */
+}
+
+/* Dark mode */
+body.dark{
+    background:#121212;
+    color:white;
+}
+
+/* ---------------- Sidebar ---------------- */
+
+.sidebar {
+    width: 230px;
+    background: linear-gradient(180deg, #0f2027, #203a43, #2c5364);
+    color: white;
+    height: 100vh;
+    padding: 20px;
+    position: fixed;
+}
+
+.sidebar h5{
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.sidebar a {
+    display: block;
+    color: #e0e0e0;
+    padding: 10px;
+    text-decoration: none;
+    margin-bottom: 6px;
+    border-radius: 6px;
+    transition: 0.2s;
+}
+
+.sidebar a:hover {
+    background: rgba(255,255,255,0.1);
+    color: white;
+}
+
+/* ---------------- Content Area ---------------- */
+
+.content{
+    margin-left:230px;
+    padding:30px;
+    width: 100%;
+}
+
+/* ---------------- Top Header ---------------- */
+
+.topbar{
+    background: linear-gradient(90deg, #1f3c88, #4a69bd);
+    color:white;
+    padding:15px 20px;
+    border-radius:10px;
+    margin-bottom:20px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.15);
+}
+
+.topbar h3{
+    margin:0;
+}
+
+/* ---------------- Summary Card ---------------- */
+
+.summary-card{
+    padding:18px;
+    background:#ffffff;
+    border-radius:10px;
+    margin-bottom:20px;
+    box-shadow:0px 2px 6px rgba(0,0,0,0.08);
+    transition: 0.2s;
+}
+
+.summary-card:hover{
+    transform: translateY(-2px);
+}
+
+/* Dark card */
+.dark .summary-card{
+    background:#1f1f1f;
+}
+
+/* ---------------- Suspicious Rows ---------------- */
+
+.suspicious{
+    background:#ffe5e5 !important;
+    font-weight:bold;
+}
+
+/* ---------------- Search Highlight ---------------- */
+
+.search-hit{
+    background: #fff3cd !important;
+    font-weight:bold;
+}
+
+/* ---------------- Typography ---------------- */
+
+h2, h3, h4{
+    margin-top: 20px;
+}
+
+p{
+    line-height: 1.6;
+}
+
+/* ---------------- Scrollbar (optional polish) ---------------- */
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #bbb;
+    border-radius: 10px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- Sidebar Navigation -->
+
+<div class="sidebar">
+
+<h5 style="text-align:center;margin-bottom:25px;">
+🧠 Forensics
+</h5>
+
+<a href="/">🏠 Dashboard</a>
+<a href="/timeline">🕒 Timeline</a>
+<a href="/history">📂 History</a>
+<a href="/settings">⚙️ Settings</a>
+
+</div>
+
+
+<!-- Main Content -->
+
+<div class="content">
+
+<!-- Global header -->
+<div class="topbar">
+    <h3>Memory Forensics Dashboard</h3>
+</div>
+
+{% block content %}{% endblock %}
+
+</div>
+
+
+<script>
+
+/* ---------------- Theme Handling ---------------- */
+
+function setTheme(mode){
+    localStorage.setItem("theme",mode)
+    applyTheme()
+}
+
+function applyTheme(){
+    if(localStorage.getItem("theme")=="dark"){
+        document.body.classList.add("dark")
+    }else{
+        document.body.classList.remove("dark")
+    }
+}
+
+applyTheme()
+
+
+/* ---------------- Global Search ---------------- */
+
+function searchTables(){
+
+    let input = document.getElementById("searchBox")
+
+    if(!input) return
+
+    let filter = input.value.toLowerCase()
+
+    let rows = document.querySelectorAll("table tbody tr")
+
+    rows.forEach(row => {
+
+        row.classList.remove("search-hit")
+
+        let text = row.innerText.toLowerCase()
+
+        if(filter !== "" && text.includes(filter)){
+            row.classList.add("search-hit")
+        }
+
+    })
+}
+
+</script>
+
+</body>
+</html>

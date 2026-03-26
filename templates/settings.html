@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Settings</h2>
+
+<hr>
+
+<!-- Theme controls let the user choose light or dark mode -->
+<h4>Theme</h4>
+
+<div class="mb-3">
+    <button class="btn btn-dark me-2" onclick="selectTheme('dark')">
+        Dark Mode
+    </button>
+
+    <button class="btn btn-light" onclick="selectTheme('light')">
+        Light Mode
+    </button>
+</div>
+
+<p>
+    <strong>Selected Theme:</strong>
+    <span id="themePreview">Light</span>
+</p>
+
+<hr>
+
+<!-- Font controls let the user change the look of the dashboard -->
+<h4>Font Settings</h4>
+
+<div class="mb-3">
+    <label for="fontSelect"><strong>Font Family</strong></label>
+    <select id="fontSelect" class="form-control">
+        <option value="Arial">Arial</option>
+        <option value="Verdana">Verdana</option>
+        <option value="Times New Roman">Times New Roman</option>
+        <option value="Georgia">Georgia</option>
+    </select>
+</div>
+
+<div class="mb-3">
+    <label for="fontSizeSelect"><strong>Font Size</strong></label>
+    <select id="fontSizeSelect" class="form-control">
+        <option value="14px">Small</option>
+        <option value="16px">Medium</option>
+        <option value="18px">Large</option>
+        <option value="20px">Extra Large</option>
+    </select>
+</div>
+
+<!-- Action buttons for saving or resetting settings -->
+<div class="mb-3">
+    <button class="btn btn-primary me-2" onclick="saveSettings()">
+        Confirm Settings
+    </button>
+
+    <button class="btn btn-secondary" onclick="resetSettings()">
+        Reset to Default
+    </button>
+</div>
+
+<!-- Short feedback message shown after save or reset -->
+<p id="settingsMessage" style="display:none; color:green; font-weight:bold;">
+    Settings saved successfully.
+</p>
+
+<hr>
+
+<script>
+    // Keep track of the selected theme before saving
+    let selectedTheme = localStorage.getItem("theme") || "light";
+
+    // Update the theme preview when the user clicks a theme button
+    function selectTheme(theme) {
+        selectedTheme = theme;
+        document.getElementById("themePreview").innerText =
+            theme.charAt(0).toUpperCase() + theme.slice(1);
+    }
+
+    // Save the current settings to local storage and apply them across the app
+    function saveSettings() {
+        let font = document.getElementById("fontSelect").value;
+        let fontSize = document.getElementById("fontSizeSelect").value;
+
+        localStorage.setItem("theme", selectedTheme);
+        localStorage.setItem("font", font);
+        localStorage.setItem("fontSize", fontSize);
+
+        if (typeof applySettings === "function") {
+            applySettings();
+        }
+
+        let message = document.getElementById("settingsMessage");
+        message.innerText = "Settings saved successfully.";
+        message.style.display = "block";
+
+        setTimeout(() => {
+            message.style.display = "none";
+        }, 2000);
+    }
+
+    // Restore the default theme and font settings
+    function resetSettings() {
+        localStorage.setItem("theme", "light");
+        localStorage.setItem("font", "Arial");
+        localStorage.setItem("fontSize", "16px");
+
+        selectedTheme = "light";
+
+        document.getElementById("themePreview").innerText = "Light";
+        document.getElementById("fontSelect").value = "Arial";
+        document.getElementById("fontSizeSelect").value = "16px";
+
+        if (typeof applySettings === "function") {
+            applySettings();
+        }
+
+        let message = document.getElementById("settingsMessage");
+        message.innerText = "Settings reset to default.";
+        message.style.display = "block";
+
+        setTimeout(() => {
+            message.style.display = "none";
+            message.innerText = "Settings saved successfully.";
+        }, 2000);
+    }
+
+    // Load any saved settings when the page opens
+    function loadSavedSettings() {
+        let savedTheme = localStorage.getItem("theme") || "light";
+        let savedFont = localStorage.getItem("font") || "Arial";
+        let savedFontSize = localStorage.getItem("fontSize") || "16px";
+
+        selectedTheme = savedTheme;
+
+        document.getElementById("themePreview").innerText =
+            savedTheme.charAt(0).toUpperCase() + savedTheme.slice(1);
+
+        document.getElementById("fontSelect").value = savedFont;
+        document.getElementById("fontSizeSelect").value = savedFontSize;
+    }
+
+    loadSavedSettings();
+</script>
+
+{% endblock %}

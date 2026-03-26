@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Analysis Results</h2>
+
+<div class="alert alert-success">
+    Analysis completed successfully.
+</div>
+
+<div class="mb-3">
+    <a href="/download_json/{{ file }}" class="btn btn-success">⬇ Download JSON</a>
+    <a href="/download_pdf" class="btn btn-danger">⬇ Export PDF</a>
+</div>
+
+{% if report %}
+
+<div class="summary-card">
+    <h4>{{ report.report_title }}</h4>
+    <p><strong>Job ID:</strong> {{ report.job_id }}</p>
+    <p><strong>Source File:</strong> {{ report.source_file }}</p>
+    <p><strong>Generated At:</strong> {{ report.generated_at }}</p>
+    <p><strong>Analysis Duration:</strong> {{ report.analysis_duration_seconds }} seconds</p>
+    <p><strong>Selected Plugins:</strong> {{ report.selected_plugins|join(', ') }}</p>
+    <p><strong>Executive Summary:</strong> {{ report.executive_summary }}</p>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="summary-card">
+            <h5>High Alerts</h5>
+            <h3>{{ report.severity_counts.high }}</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="summary-card">
+            <h5>Medium Alerts</h5>
+            <h3>{{ report.severity_counts.medium }}</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="summary-card">
+            <h5>Low Alerts</h5>
+            <h3>{{ report.severity_counts.low }}</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="summary-card">
+            <h5>Threat Score</h5>
+            <h3>{{ summary.risk_score }} / 100</h3>
+        </div>
+    </div>
+</div>
+
+<div class="summary-card">
+    <h5>Threat Score Explanation</h5>
+    <p><strong>Final Score:</strong> {{ summary.risk_score }} / 100</p>
+    <p><strong>Raw Score Contribution:</strong> {{ report.score_explanation.raw_total }}</p>
+    <p><strong>Capped Score:</strong> {{ report.score_explanation.capped_total }} / {{ report.score_explanation.max_score }}</p>
+    <p><strong>Triage Level:</strong> {{ report.score_explanation.triage_level }}</p>
+
+    {% if summary.risk_score >= 80 %}
+    <p>🔴 <strong>High Risk:</strong> Strong indicators of suspicious or potentially malicious activity were detected.</p>
+    {% elif summary.risk_score >= 40 %}
+    <p>🟠 <strong>Moderate Risk:</strong> Suspicious activity was detected and should be reviewed further.</p>
+    {% else %}
+    <p>🟡 <strong>Low Risk:</strong> Limited suspicious activity was detected, but findings should still be reviewed in context.</p>
+    {% endif %}
+
+    {% if report.score_explanation.was_capped %}
+    <p><strong>Note:</strong> The raw category contributions exceeded 100, so the final threat score was capped at 100.</p>
+    {% endif %}
+
+    <ul>
+        {% for item in report.score_explanation.how_it_works %}
+        <li>{{ item }}</li>
+        {% endfor %}
+    </ul>
+</div>
+
+{% if report.top_contributors %}
+<div class="summary-card">
+    <h5>Top Contributing Factors</h5>
+    <ul>
+        {% for item in report.top_contributors %}
+        <li>
+            <strong>{{ item.category|capitalize }}</strong>:
+            {{ item.message }} (+{{ item.score }})
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary ms-2"
+                onclick='pinFinding("{{ item.category|capitalize }}: {{ item.message }} (+{{ item.score }})")'>
+                ⭐ Pin
+            </button>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="summary-card">
+    <h5>Pinned Findings</h5>
+    <ul id="pinnedFindingsList"></ul>
+    <p id="noPinnedFindings">No findings pinned yet.</p>
+</div>
+
+<div class="summary-card">
+    <h5>Investigation Notes</h5>
+    <textarea
+        id="investigationNotes"
+        class="form-control"
+        rows="6"
+        placeholder="Write your investigation notes here..."></textarea>
+
+    <div class="mt-2">
+        <button type="button" class="btn btn-primary" onclick="saveNotes()">Save Notes</button>
+        <button type="button" class="btn btn-secondary" onclick="clearNotes()">Clear Notes</button>
+    </div>
+
+    <p id="savedNoteMessage" style="display:none; color:green; font-weight:bold; margin-top:10px;">
+        Notes saved successfully.
+    </p>
+</div>
+
+{% if report.score_breakdown %}
+<div class="summary-card">
+    <h5>Score Breakdown</h5>
+    <div class="row">
+        <div class="col-md-2"><p><strong>Processes</strong></p><p>{{ report.score_breakdown.processes }}</p></div>
+        <div class="col-md-2"><p><strong>Paths</strong></p><p>{{ report.score_breakdown.paths }}</p></div>
+        <div class="col-md-2"><p><strong>Injection</strong></p><p>{{ report.score_breakdown.injection }}</p></div>
+        <div class="col-md-2"><p><strong>Network</strong></p><p>{{ report.score_breakdown.network }}</p></div>
+        <div class="col-md-2"><p><strong>Stability</strong></p><p>{{ report.score_breakdown.stability }}</p></div>
+        <div class="col-md-2"><p><strong>Raw Total</strong></p><p>{{ report.score_breakdown.raw_total }}</p></div>
+        <div class="col-md-2"><p><strong>Capped Total</strong></p><p>{{ report.score_breakdown.capped_total }}</p></div>
+    </div>
+</div>
+{% endif %}
+
+{% if report.top_affected_processes %}
+<div class="summary-card">
+    <h5>Top Affected Processes</h5>
+    <div class="row">
+        {% for proc in report.top_affected_processes %}
+        <div class="col-md-6 mb-3">
+            <div class="summary-card" style="margin-bottom:0;">
+                <p><strong>{{ proc.name }}</strong></p>
+                <p><strong>PID:</strong> {{ proc.pid }}</p>
+                <p><strong>Weighted Score:</strong> {{ proc.score }}</p>
+                <p><strong>Total Indicators:</strong> {{ proc.indicator_count }}</p>
+
+                {% if proc.reasons %}
+                <p><strong>Why flagged:</strong></p>
+                <ul>
+                    {% for reason in proc.reasons %}
+                    <li>{{ reason }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+
+                <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    onclick='pinFinding("Process: {{ proc.name }} (PID {{ proc.pid }})")'>
+                    ⭐ Pin Process
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if report.correlated_findings %}
+<div class="summary-card">
+    <h5>Correlated Findings</h5>
+    <ul>
+        {% for item in report.correlated_findings %}
+        <li>{{ item }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="summary-card">
+    <h5>System Details</h5>
+    <p><strong>Build Lab:</strong> {{ report.system_details.build_lab }}</p>
+    <p><strong>System Time:</strong> {{ report.system_details.system_time }}</p>
+    <p><strong>System Root:</strong> {{ report.system_details.system_root }}</p>
+    <p><strong>64-bit OS:</strong> {{ report.system_details.is_64_bit }}</p>
+</div>
+
+{% if report.plugin_status %}
+<div class="summary-card">
+    <h5>Limitations / Plugin Status</h5>
+    <ul>
+        {% for plugin_name, status in report.plugin_status.items() %}
+        <li>
+            <strong>{{ plugin_name }}</strong>:
+            {% if status == "OK" %}
+            ✅ {{ status }}
+            {% else %}
+            ⚠️ {{ status }}
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% if report.commonly_reviewed_sections %}
+<div class="summary-card">
+    <h5>Commonly Reviewed Areas</h5>
+    <div class="row">
+        {% for section in report.commonly_reviewed_sections %}
+        <div class="col-md-6 mb-3">
+            <div class="summary-card" style="margin-bottom:0;">
+                <p><strong>{{ section.title }}</strong></p>
+                <p><strong>Plugin:</strong> {{ section.plugin }}</p>
+                <p><strong>Status:</strong> {{ section.status }}</p>
+                <p><strong>Rows:</strong> {{ section.count }}</p>
+                <p><strong>Why review:</strong> {{ section.note }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="summary-card">
+    <h5>Key Findings</h5>
+    <ul>
+        {% for finding in report.key_findings %}
+        <li>{{ finding }}</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<div class="summary-card">
+    <h5>High Priority Evidence</h5>
+    {% if report.high_priority_evidence %}
+    <ul>
+        {% for item in report.high_priority_evidence %}
+        <li>{{ item }}</li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p>No high priority evidence extracted.</p>
+    {% endif %}
+</div>
+
+{% if report.recommendations %}
+<div class="summary-card">
+    <h5>Recommended Next Steps</h5>
+    <ul>
+        {% for item in report.recommendations %}
+        <li>{{ item }}</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% endif %}
+
+<input
+    id="searchBox"
+    class="form-control"
+    placeholder="Search results"
+    onkeyup="searchTables()"
+>
+
+<br>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="summary-card">
+            <h5>Processes</h5>
+            <h3>{{ summary.processes }}</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="summary-card">
+            <h5>Connections</h5>
+            <h3>{{ summary.network_connections }}</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="summary-card">
+            <h5>Injected Regions</h5>
+            <h3>{{ summary.injected_regions }}</h3>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="summary-card">
+            <h5>Threat Score</h5>
+            <h3>{{ summary.risk_score }} / 100</h3>
+        </div>
+    </div>
+</div>
+
+<hr>
+
+<h4>Detection Alerts</h4>
+
+{% if alerts %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="summary-card">
+            <h5>High Severity</h5>
+            <ul>
+                {% for a in alerts %}
+                {% if "HIGH" in a %}
+                <li>🔴 {{ a }}</li>
+                {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="summary-card">
+            <h5>Medium Severity</h5>
+            <ul>
+                {% for a in alerts %}
+                {% if "MEDIUM" in a %}
+                <li>🟠 {{ a }}</li>
+                {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="summary-card">
+            <h5>Low Severity</h5>
+            <ul>
+                {% for a in alerts %}
+                {% if "HIGH" not in a and "MEDIUM" not in a %}
+                <li>🟡 {{ a }}</li>
+                {% endif %}
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-secondary">
+    No suspicious findings detected.
+</div>
+{% endif %}
+
+<hr>
+
+<h3>Plugin Results</h3>
+
+{% for plugin, data in results.items() %}
+<div class="card mb-3">
+    <div class="card-header">
+        <strong>{{ plugin }}</strong>
+        <button
+            class="btn btn-sm btn-outline-secondary float-end"
+            onclick="toggle('{{ plugin }}')">
+            Toggle
+        </button>
+    </div>
+
+    <div id="{{ plugin }}" style="display:none">
+        <div class="card-body" style="overflow-x:auto;">
+            <table class="table table-striped table-bordered" style="font-size:12px;">
+                <thead>
+                    <tr>
+                        {% for col in data.columns %}
+                        <th>{{ col }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in data.rows %}
+                    <tr>
+                        {% for cell in row %}
+                        <td style="max-width:300px;word-break:break-word;">{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<script>
+function toggle(id){
+    let el = document.getElementById(id);
+    el.style.display = (el.style.display === "none") ? "block" : "none";
+}
+
+function pinFinding(text){
+    let storageKey = "pinned_findings_{{ report.job_id if report else 'default' }}";
+    let saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+
+    if(!saved.includes(text)){
+        saved.push(text);
+        localStorage.setItem(storageKey, JSON.stringify(saved));
+    }
+
+    loadPinnedFindings();
+}
+
+function loadPinnedFindings(){
+    let storageKey = "pinned_findings_{{ report.job_id if report else 'default' }}";
+    let saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+    let list = document.getElementById("pinnedFindingsList");
+    let emptyText = document.getElementById("noPinnedFindings");
+
+    if(!list || !emptyText){
+        return;
+    }
+
+    list.innerHTML = "";
+
+    if(saved.length === 0){
+        emptyText.style.display = "block";
+        return;
+    }
+
+    emptyText.style.display = "none";
+
+    saved.forEach((item, index) => {
+        let li = document.createElement("li");
+        li.innerHTML = `${item} <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="removePinnedFinding(${index})">Remove</button>`;
+        list.appendChild(li);
+    });
+}
+
+function removePinnedFinding(index){
+    let storageKey = "pinned_findings_{{ report.job_id if report else 'default' }}";
+    let saved = JSON.parse(localStorage.getItem(storageKey) || "[]");
+
+    saved.splice(index, 1);
+    localStorage.setItem(storageKey, JSON.stringify(saved));
+
+    loadPinnedFindings();
+}
+
+function saveNotes(){
+    let box = document.getElementById("investigationNotes");
+    let message = document.getElementById("savedNoteMessage");
+
+    if(!box || !message){
+        return;
+    }
+
+    let storageKey = "investigation_notes_{{ report.job_id if report else 'default' }}";
+    localStorage.setItem(storageKey, box.value);
+
+    message.style.display = "block";
+
+    setTimeout(() => {
+        message.style.display = "none";
+    }, 2000);
+}
+
+function clearNotes(){
+    let box = document.getElementById("investigationNotes");
+
+    if(!box){
+        return;
+    }
+
+    let storageKey = "investigation_notes_{{ report.job_id if report else 'default' }}";
+    box.value = "";
+    localStorage.removeItem(storageKey);
+}
+
+function loadNotes(){
+    let box = document.getElementById("investigationNotes");
+
+    if(!box){
+        return;
+    }
+
+    let storageKey = "investigation_notes_{{ report.job_id if report else 'default' }}";
+    let savedNotes = localStorage.getItem(storageKey) || "";
+    box.value = savedNotes;
+}
+
+loadPinnedFindings();
+loadNotes();
+</script>
+
+{% endblock %}
